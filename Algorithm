@@ -1,0 +1,407 @@
+import java.util.*;
+import java.io.*;
+import java.lang.*;
+
+// NOTES: Remember to add a space after the 5th choice of the last person when pasting from spreadsheet to repl.it input!
+// FORMAT OF INPUT:
+// n <number of minis going to strath (115 in 2018)>
+// <n rows with 7 items per row indicating <gender (M/F)>, <grade (9-12)>, <5 choices> (paste from google sheets)>
+// OUTPUT: ignore ID numbers greater than or equal to n
+
+class Main {
+
+  /* randomly assign listings
+  public static int[][] listingFormation(int n, int[][] choices, int[] genders, int[] grades) {
+    int[][] listing = new int[12][10];
+    ArrayList<Integer> taken = new ArrayList<Integer>();
+    for(int i = 0; i<120; i++) {
+      taken.add(i);
+    }
+
+    for(int i = 0; i<12; i++) {
+      for(int j = 0; j<10; j++) {
+        int value = (int)(Math.random()*(taken.size()));
+        listing[i][j] = taken.get(value);
+        taken.remove(value); 
+      }
+    }
+    return listing;
+  }*/
+
+  static int[] counters = {0,0,0,0,0,0};
+
+  /* assign listings without considering grade/gender
+  public static int[][] listingFormation(int n, int[][] choices, int[] genders, int[] grades) {
+    int[][] listing = new int[12][10];
+    for(int i = 0; i<12; i++) {
+      for(int j = 0; j<10; j++) {
+        listing[i][j]=-1;
+      }
+    }
+    for(int i = 0; i<120; i++) {
+      boolean foundSomething = false;
+      for(int j = 0; j<5; j++) {
+        if(countnegs(listing[choices[i][j]])>0) {
+          listing[choices[i][j]][10-countnegs(listing[choices[i][j]])] = i;
+          foundSomething = true;
+          j=5;
+        }
+      }
+      if(!foundSomething) {
+        for(int k = 0; k<12; k++) {
+          for(int l = 0; l<10; l++) {
+            if(listing[k][l] == -1) {
+              listing[k][l] = i;
+              k = 12;
+              l = 10;
+            }
+          }
+        }
+      }
+    }
+    return listing;
+  }*/
+
+  public static boolean twopplTogether(int[][] listing, int n1, int n2) {
+    int trip1 = 0;
+    int trip2 = 0;
+    for(int i = 0; i<listing.length; i++) {
+      for(int j = 0; j<listing[i].length; j++) {
+        if(listing[i][j]==n1) {
+          trip1 = i;
+        }
+        if(listing[i][j]==n2) {
+          trip2 = i;
+        }
+      }
+    }
+    if(trip1==trip2) {return true;} else {return false;}
+  }
+
+  public static int returnIndexOfMin(int[] desires) {
+    int min = 10000;
+    for(int element : desires) {
+      if(element<min) {
+        min = element;
+      }
+    }
+    ArrayList<Integer> ties = new ArrayList<Integer>();
+    for(int i = 0; i<desires.length; i++) {
+      if(desires[i] == min) {
+        ties.add(i);
+      }
+    }
+    int rand = (int)(Math.random()*ties.size());
+    return ties.get(rand);
+  }
+
+  public static ArrayList<Integer> findpplInGrade(int[][] listing, int[] grades, int trip, int gradeInQuestion) {
+    ArrayList<Integer> list = new ArrayList<Integer>();
+    int[] arr = listing[trip];
+    for(int i = 0; i<arr.length; i++) {
+      if(arr[i]!=-1) {
+        if(grades[arr[i]]==gradeInQuestion) {
+          list.add(arr[i]);
+        }
+      }
+    }
+    /*
+    int[] pplInGrade = new int[list.size()];
+    for(int i = 0; i<pplInGrade.length; i++) {
+      pplInGrade[i] = list.get(i);
+    }
+    */
+    return list;
+  }
+
+  public static int[][] listingFormation(int n, int[][] choices, int[] genders, int[] grades) {
+    int[][] listing = new int[12][10];
+
+    boolean done = false;
+    while(!done) {
+      int alarumBells = 0;
+
+      for(int i = 0; i<12; i++) {
+        for(int j = 0; j<10; j++) {
+          listing[i][j]=-1;
+        }
+      }
+
+      ArrayList<Integer> idNums = new ArrayList<Integer>();
+      ArrayList<Integer> taken = new ArrayList<Integer>();
+      int[] desire = new int[120];
+
+
+      for(int iteration = 0; iteration<2; iteration++) { // TWO ppl per grade
+        for(int grade = 12; grade>8; grade--) {
+          
+          for(int i = 0; i<120; i++) {
+            if(grades[i]==grade) {
+              idNums.add(i);
+            }
+          }
+          for(int trip = 0; trip<12; trip++) {
+            
+            // reset desire array!
+            for(int i = 0; i<120; i++) {
+              desire[i] = 100;
+            }
+
+            for(int i : idNums) {
+              if(!taken.contains(i)) {
+                boolean oneOfTheChoices = false;
+                for(int j = 0; j<5; j++) {
+                  if(choices[i][j]==trip) {
+                    desire[i] = j;
+                    oneOfTheChoices = true;
+                  }
+                }
+                if(!oneOfTheChoices) {
+                  desire[i] = 10;
+                }
+              } else {
+                desire[i] = 200;
+              }
+            }
+
+            for(int i = 0; i<10; i++) {
+              if(listing[trip][i]==-1) {
+                int personInQuestion = returnIndexOfMin(desire);
+                listing[trip][i]=personInQuestion; // assigns person to a trip
+                taken.add(personInQuestion); // marks this person as "assigned" or "taken"
+                i = 10;
+              }
+            }
+          }
+          idNums.clear();
+        }
+      }
+      
+
+      for(int i = 0; i<n; i++) {
+        if(!taken.contains(i)) {
+          idNums.add(i);
+        }
+      }
+      for(int i : idNums) {
+        boolean foundSomething = false;
+        for(int j = 0; j<5; j++) {
+          if(countnegs(listing[choices[i][j]])>0) {
+            listing[choices[i][j]][10-countnegs(listing[choices[i][j]])] = i;
+            foundSomething = true;
+            j=5;
+          }
+        }
+        if(!foundSomething) {
+          for(int k = 0; k<12; k++) {
+            for(int l = 0; l<10; l++) {
+              if(listing[k][l] == -1) {
+                listing[k][l] = i;
+                k = 12;
+                l = 10;
+              }
+            }
+          }
+        }
+      }
+
+      idNums.clear();
+
+      // END EASY STUFF HERE
+
+      for(int cat = 0; cat<100; cat++) { // iterate the swapping process
+
+        for(int trip = 0; trip<12; trip++) {
+          for(int grade = 12; grade>8; grade--) {
+            idNums = findpplInGrade(listing, grades, trip, grade);
+
+            int[] gendersOfGradeOfTrip = new int[120];
+            for(int i = 0; i<120; i++) { // initialize all to -1
+              gendersOfGradeOfTrip[i] = -1;
+            }
+
+            for(int i : idNums) {
+              gendersOfGradeOfTrip[i] = genders[i];
+            }
+
+            int countMale = 0;
+            int countFemale = 0;
+            for(int i = 0; i<120; i++) {
+              if(gendersOfGradeOfTrip[i] == 0) {
+                countMale++;
+              } else if(gendersOfGradeOfTrip[i] == 1) {
+                countFemale++;
+              }
+            }
+
+            if((countMale==0)||(countFemale==0)) {
+              if(cat==99) {alarumBells++;}
+              ArrayList<Integer> idNums2 = new ArrayList<Integer>();
+
+              int badGender = 1;
+              int goodGender = 0;
+              if(countFemale==0) {
+                badGender = 0;
+                goodGender = 1;
+              }
+
+              for(int trip2 = 0; trip2<12; trip2++) {
+                idNums = findpplInGrade(listing, grades, trip, grade);
+                idNums2 = findpplInGrade(listing, grades, trip2, grade);
+
+                int[] gendersOfGradeOfTrip2 = new int[120];
+                for(int i = 0; i<120; i++) { // initialize all to -1
+                  gendersOfGradeOfTrip2[i] = -1;
+                }            
+
+                for(int i : idNums2) {
+                  gendersOfGradeOfTrip2[i] = genders[i];
+                }
+
+                int countOppositeGender = 0;
+                ArrayList<Integer> possibleSwaps = new ArrayList<Integer>();
+                for(int i = 0; i<120; i++) {
+                  if(gendersOfGradeOfTrip2[i] == goodGender) {
+                    countOppositeGender++;
+                    possibleSwaps.add(i);
+                  }
+                }
+
+                if(countOppositeGender>=2) {
+                  for(int i = 0; i<120; i++) {
+                    if(possibleSwaps.contains(i)) {
+                      for(int j = 0; j<5; j++) {
+                        if(choices[i][j] == trip) {
+                          for(int originalPerson = 0; originalPerson<120; originalPerson++) {
+                            if(idNums.contains(originalPerson)) {
+                              for(int j2 = 0; j2<5; j2++) {
+                                if(choices[originalPerson][j2] == trip2) {
+                                  for(int x = 0; x<listing[trip2].length; x++) {
+                                    if(listing[trip2][x]==i) {
+                                      listing[trip2][x]=originalPerson;
+                                    }
+                                  }
+                                  for(int x = 0; x<listing[trip].length; x++) {
+                                    if(listing[trip][x]==originalPerson) {
+                                      listing[trip][x]=i;
+                                    }
+                                  }
+
+                                  j2=5;
+                                  originalPerson=120;
+                                  j=5;
+                                  i=120;
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+                possibleSwaps.clear();
+                idNums2.clear();
+              }
+            }
+            idNums.clear();
+          }
+        }
+      }
+      System.out.println("Alarum bells: "+alarumBells);
+      if(true) {done = true;}
+    }
+    return listing;
+  }
+
+  public static int countnegs(int[] arr) {
+    int value = 0;
+    for(int i = 0; i<arr.length; i++) {
+      if(arr[i] < 0) {value++;}
+    }
+    return value;
+  }
+
+  public static int calculatePoints(int[][] listing, int[][] choices) {
+    int points = 0;
+    for(int i = 0; i<12; i++) {
+      for(int j = 0; j<10; j++) {
+        boolean gotSomething = false;
+        for(int k = 0; k<5; k++) {
+          if(listing[i][j]!=-1) {
+            if(i == choices[listing[i][j]][k]) {
+              points += (5-k);
+              gotSomething = true;
+              counters[k]++;
+            }
+          }
+        }
+        if(!gotSomething) {
+          counters[5]++;
+        } 
+      }
+    }
+    return points;
+  }
+
+  public static void main(String[] args) {
+
+    Scanner scan = new Scanner(System.in);
+
+    int[] trips = {0,1,2,3,4,5,6,7,8,9,10,11};
+
+    int[] genders = new int[120];
+    int[] grades = new int[120];
+    int[][] choices = new int[120][5];
+    for(int i = 0; i<120; i++) {
+      for(int j = 0; j<5; j++) {
+        choices[i][j] = 1000;
+      }
+    }
+
+    for(int i = 0; i<120; i++) {
+      genders[i] = -1;
+      grades[i] = -1;
+    }
+
+    /* RANDOMIZING PREFERENCES
+    for(int i = 0; i<120; i++) {
+      ArrayList<Integer> taken = new ArrayList<Integer>();
+      for(int trip = 0; trip<12; trip++) {
+        taken.add(trip);
+      }
+      for(int j = 0; j<5; j++) {
+        int value = (int)(Math.random()*taken.size());
+        choices[i][j] = taken.get(value);
+        taken.remove(value);
+      }
+    }
+    */
+
+    int n = scan.nextInt();
+    for(int i = 0; i<n; i++) {
+      String value = scan.next();
+      if(value.equals("M")) {
+        genders[i] = 0;
+      } else {
+        genders[i] = 1;
+      }
+      grades[i] = scan.nextInt();
+      for(int j = 0; j<5; j++) {
+        choices[i][j] = scan.nextInt();
+      }
+    }
+    scan.close();
+    
+    int[][] temp = listingFormation(n, choices, genders, grades);
+    int points = calculatePoints(temp, choices);
+    
+    for(int i = 0; i<12; i++) {
+      System.out.println(Arrays.toString(temp[i]));
+    }
+
+    System.out.println(points);
+    System.out.println(Arrays.toString(counters));
+
+  }
+}
